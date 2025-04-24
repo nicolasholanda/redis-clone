@@ -3,11 +3,11 @@ package main
 import (
 	"fmt"
 	"net"
-	"io"
-	"os"
 )
 
 func main() {
+	fmt.Println("Listening on port :6379")
+
 	// Create a new server at port 6379
 	l, err := net.Listen("tcp", ":6379")
 	if err != nil {
@@ -27,26 +27,16 @@ func main() {
 	fmt.Println("Redis clone is running on port 6379...")
 
 	for {
-		buf := make([]byte, 1024)
-
-		// read message from client
-		_, err = conn.Read(buf)
+		resp := NewResp(conn)
+		value, err := resp.Read()
 		if err != nil {
-			if err == io.EOF {
-				break
-			}
-			fmt.Println("Error reading from client: ", err.Error())
-			os.Exit(1)
+			fmt.Println(err)
+			return
 		}
 
-		fmt.Println("New client connected:", conn.RemoteAddr())
+		fmt.Println(value)
 
-		// Handle client
-        go handleConnection(conn)
+		// ignore request and send back a PONG
+		conn.Write([]byte("+OK\r\n"))
 	}
-}
-
-func handleConnection(conn net.Conn) {
-	defer conn.Close()
-	fmt.Fprintln(conn, "Welcome to the Redis clone!")
 }
